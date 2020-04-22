@@ -8,7 +8,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.Toast;
 
@@ -27,7 +29,8 @@ public class AuthenticationActivity extends AppCompatActivity {
 
     private Button accessButton;
     private EditText fieldEmail, fieldPassword;
-    private Switch accessType;
+    private Switch accessType, typeUser;
+    private LinearLayout linearTypeUser;
     private FirebaseAuth authentication;
 
     @Override
@@ -39,6 +42,17 @@ public class AuthenticationActivity extends AppCompatActivity {
          authentication = FirebaseConfiguration.getFirebaseAuth();
 
          verificaUsuarioLogado();
+
+         typeUser.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+             @Override
+             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                 if( isChecked ){ //empresa
+                     linearTypeUser.setVisibility(View.VISIBLE);
+                 }else{ // usuário
+                     linearTypeUser.setVisibility(View.GONE);
+                 }
+             }
+         });
 
          accessButton.setOnClickListener(new View.OnClickListener() {
              @Override
@@ -62,7 +76,9 @@ public class AuthenticationActivity extends AppCompatActivity {
                                             Toast.makeText(AuthenticationActivity.this,
                                                     "Cadastro realizado com sucesso!",
                                                     Toast.LENGTH_LONG).show();
-                                            abrirTelaPrincipal();
+                                            String userType = getUserType();
+                                            com.santosglaiton.ifood.helper.FirebaseUser.updateUserType(userType);
+                                            abrirTelaPrincipal(userType);
 
                                         }else {
                                             String exceptionError ="";
@@ -98,7 +114,8 @@ public class AuthenticationActivity extends AppCompatActivity {
                                          Toast.makeText(AuthenticationActivity.this,
                                                  "Autenticado com sucesso",
                                                  Toast.LENGTH_LONG).show();
-                                         abrirTelaPrincipal();
+                                         String userType = task.getResult().getUser().getDisplayName();
+                                         abrirTelaPrincipal(userType);
                                      }else{
                                          Toast.makeText(AuthenticationActivity.this,
                                                  "Erro ao fazer login" + task.getException(),
@@ -123,12 +140,21 @@ public class AuthenticationActivity extends AppCompatActivity {
     private void verificaUsuarioLogado(){
         FirebaseUser currentUser = authentication.getCurrentUser();
         if ( currentUser != null ){
-            abrirTelaPrincipal();
+            String userType = currentUser.getDisplayName();
+            abrirTelaPrincipal(userType);
         }
     }
 
-    private void abrirTelaPrincipal(){
-        startActivity(new Intent(getApplicationContext(), HomeActivity.class));
+    private String getUserType(){
+        return typeUser.isChecked() ? "E" : "U";
+    }
+
+    private void abrirTelaPrincipal(String tipoUsuario){
+        if ( tipoUsuario.equals("E")){ //empresa
+            startActivity(new Intent(getApplicationContext(), CompanyActivity.class));
+        }else{ //usuário
+            startActivity(new Intent(getApplicationContext(), HomeActivity.class));
+        }
     }
 
     private void inicializaComponentes(){
@@ -136,5 +162,7 @@ public class AuthenticationActivity extends AppCompatActivity {
         fieldEmail = findViewById(R.id.editLoginEmail);
         fieldPassword = findViewById(R.id.editLoginPassword);
         accessType = findViewById(R.id.switchLogin);
+        typeUser = findViewById(R.id.switchTypeUser);
+        linearTypeUser = findViewById(R.id.linearTypeUser);
     }
 }
